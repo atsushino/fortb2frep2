@@ -71,7 +71,7 @@
             rhsp = (psi(i+1,j)+psi(i-1,j)+psi(i,j+1)+psi(i,j-1))/4.0 &
                   +omg(i,j)*h**2.0/4.0-psi(i,j)
 
-            psi(i,j) = psi(i,j)+const*rhs
+            psi(i,j) = psi(i,j)+const*rhsp
 
           end do
         end do
@@ -100,7 +100,7 @@
                   +(omg(i+1,j)-omg(i-1,j)+omg(i,j+1)-omg(i,j-1) &
                   -4.0*omg(i,j))/Re
 
-            omg(i,j) = omg(i,j)+dt*rhs/h**2
+            omg(i,j) = omg(i,j)+dt*rhso/h**2
 
           end do
         end do
