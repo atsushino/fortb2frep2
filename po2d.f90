@@ -7,7 +7,7 @@
     integer                 i, j, k, l
     integer                 Nmesh, Stop_itr, GZ_itr
     real                    Re, dt, eps, const
-    real                    h, rhs
+    real                    h, rhsp, rhso, bb, err
 
 
     write(*,*)'============== Grid generation ==================='
@@ -29,7 +29,7 @@
     write(*,*)'============== Grid generation: Done ============='
 
 
-    Stop_itr=10
+    Stop_itr=100
 
     !MAIN LOOP
     do l = 1, Stop_itr
@@ -39,8 +39,8 @@
       !left/right
       do j = 1, Nmesh
 
-        omg(1,j)      = -2.0*psi(2,j)      /h**2.0
-        omg(Nmesh,j)  = -2.0*psi(Nmesh-1,j)/h**2.0
+        omg(1,j)      = -2.0*psi(2      ,j) /h**2.0
+        omg(Nmesh,j)  = -2.0*psi(Nmesh-1,j) /h**2.0
 
       end do
 
@@ -57,27 +57,59 @@
 
 
       !calc psi
-      GZ_itr = 1000
+      GZ_itr = 100
       const = 1.0
-      do k = 1, GZ_itr
-        do j = 1, Nmesh
-          do i = 1, Nmesh
+      Re=0.20
+      dt= 0.0025
+      eps=0.00001
+      do while (err.gt.eps)
+        do j = 2, Nmesh-1
+          do i = 2, Nmesh-1
 
             tmp(i,j) = psi(i,j)
 
-            rhs = (psi(i+1,j)+psi(i-1,j)+psi(i,j+1)+psi(i,j-1))/4.0 &
-                  +omg(i,j)*h*h/4.0-psi(i,j)
+            rhsp = (psi(i+1,j)+psi(i-1,j)+psi(i,j+1)+psi(i,j-1))/4.0 &
+                  +omg(i,j)*h**2.0/4.0-psi(i,j)
 
-            psi(i,j)=psi(i,j)+const*rhs
+            psi(i,j) = psi(i,j)+const*rhs
+
+          end do
+        end do
+
+        err=0.0
+        do j = 2, Nmesh-1
+          do i = 2, Nmesh-1
+            bb=abs(psi(i,j)-tmp(i,j))
+            if(bb.ge.err) err = bb
+          end do
+        end do
+
+      end do
+
+
+
+      !calc omg
+      do k = 1, GZ_itr
+        do j = 2, Nmesh-1
+          do i = 2, Nmesh-1
+
+            tmp(i,j) = omg(i,j)
+
+            rhso = ((psi(i+1,j)-psi(i-1,j))*(omg(i,j+1)-omg(i,j-1)) &
+                  -(psi(i,j+1)-psi(i,j-1))*(omg(i+1,j)-omg(i-1,j)))/4.0 &
+                  +(omg(i+1,j)-omg(i-1,j)+omg(i,j+1)-omg(i,j-1) &
+                  -4.0*omg(i,j))/Re
+
+            omg(i,j) = omg(i,j)+dt*rhs/h**2
 
           end do
         end do
       end do
-      write(*,*) omg, psi
 
 
 
-
+      write(*,*)psi,omg
+      write(*,*)'==========================',l
 
       !close MAIN LOOP
     end do
