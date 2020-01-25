@@ -1,9 +1,7 @@
     program po2d
 
 
-
     implicit none
-    integer, allocatable :: psi(:,:), omg(:,:) ,tmp(:,:)
     integer                 i, j, k
     integer                 Nmesh, Stop_itr
     real                    Re, dt, eps
