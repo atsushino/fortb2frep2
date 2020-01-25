@@ -9,7 +9,7 @@
     real                    Re, dt, eps
 
 
-
+    write(*,*)'============== Grid generation ============='
     write(*,*) 'input meshsize'
     read(*,*) Nmesh
 
@@ -21,8 +21,9 @@
     omg(:,:)=0.0
     tmp(:,:)=0.0
 
-    write(*,*)'Mesh size=',Nmesh,'*',Nmesh,'. all grid initialized.'
-    write(*,*) psi, omg, tmp
+    write(*,*)'Mesh size=',Nmesh,'*',Nmesh,'=',Nmesh**2
+
+    write(*,*)'============== Grid generation: Done ============='
 
 
 
