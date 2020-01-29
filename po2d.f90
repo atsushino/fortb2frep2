@@ -10,13 +10,15 @@
     real(8)                    Re, dt, eps, const, Calc_max
     real(8)                    h, rhsp, rhso, err, Err_max
 
-    open(1, file='PARAM.dat')
+    open(1, file='PARAM.dat', action="read")
+    open(2, file='psi.txt', action="write")
+    open(3, file='omg.txt', action="write")
+
     read(1,*)Basename, const, Re, dt, eps, Ncell, Stop_itr, Calc_max
 
-    write(*,*)'============== Grid generation ==================='
+    write(*,*)'======= Grid generation ============='
 
-    Nvert = Ncell + 1
-
+    Nvert = Ncell + 1           !cellvertex
 
     allocate(psi(Nvert,Nvert))  !cellvertex
     allocate(omg(Nvert,Nvert))
@@ -26,31 +28,31 @@
     omg(:,:)=0.0
     tmp(:,:)=0.0
 
-    write(*,*)'Mesh size=',Ncell,'*',Ncell,'=',Ncell**2
+    write(*,*)'Grid size=',Ncell,'*',Ncell,'=',Ncell**2
+
 
     h = 1.0/float(Ncell)
 
-    write(*,*)'============== Grid generation: Done ============='
-
-
+    write(*,*)'======= Grid generation: Done ======='
+    write(*,*)
 
 
 
     !MAIN LOOP
+    write(*,*)'======= Psi-Omega Method ============'
+
     FLAG=0
     q=0
     l=0
     m=0
+
     do while (FLAG == 0)
       l=l+1
 
-      !write(*,*)psi
-      !write(*,*)omg
-
-      !========boundary condition for cuvic cavity
-
       i=0.0
       j=0.0
+
+      !======= boundary condition for cuvic cavity
 
       !left/right
       do j = 1, Nvert
@@ -67,33 +69,33 @@
         omg(i,Nvert)  = -2.0*(psi(i,Nvert-1)+h)/(h**2.0)
 
       end do
-      !========END boundary condition for cuvic cavity
+      !======= boundary condition for cuvic cavity: END
 
 
+      !======= Calc psi and omega : Gauss-Seidel Method
 
       !calc psi
-      m = 0
-      Err_max=eps*1.1
+
+      m = 0             !reset counter GS_itr
+      Err_max=eps*1.1   !enter DO loop below
+
       do while (Err_max.gt.eps .and. FLAG == 0)
 
-                m = m + 1
-        write(*,*)'Itr=',l,'GZitr=',m,'Err_max',Err_max
+        m = m + 1
         Err_max=0.0
-
 
         i=0.0
         j=0.0
-
         do j = 2, Nvert-1
           do i = 2, Nvert-1
 
-            tmp(i,j) = psi(i,j)
+            tmp(i,j) = psi(i,j)   !store current psi
 
             rhsp = (psi(i+1,j)+psi(i-1,j)+psi(i,j+1)+psi(i,j-1))/4.0 &
                    +omg(i,j)*(h**2.0)/4.0-psi(i,j)
 
-            psi(i,j) = psi(i,j)+const*rhsp
-            !write(*,*)'psi',psi
+            psi(i,j) = psi(i,j)+const*rhsp  !calc new psi
+
           end do
         end do
 
@@ -106,7 +108,7 @@
             err=abs(psi(i,j)-tmp(i,j))
 
             if(err.ge.Err_max) then
-              Err_max = err
+              Err_max = err         !calc Err for GSitr
             end if
 
           end do
@@ -116,75 +118,82 @@
           do i = 1, Nvert
 
             if(abs(psi(i,j)).ge.Calc_max .or. abs(omg(i,j)).ge.Calc_max) then
-              FLAG=1
+              FLAG=1    !ABRT calclatio to aboid overflow
             end if
 
           end do
         end do
 
+        write(*,*)'Itr=',l,'GSitr=',m,'Err_max',Err_max
+
       end do
 
 
-        i=0.0
-        j=0.0
 
-        !calc omg
-        do j = 2, Nvert-1
-          do i = 2, Nvert-1
+      !calc omg
+      i=0.0
+      j=0.0
+      do j = 2, Nvert-1
+        do i = 2, Nvert-1
 
-            tmp(i,j) = omg(i,j)
+          tmp(i,j) = omg(i,j)
 
-            rhso = ((psi(i+1,j)-psi(i-1,j))*(omg(i,j+1)-omg(i,j-1)) &
-                  -(psi(i,j+1)-psi(i,j-1))*(omg(i+1,j)-omg(i-1,j)))/4.0 &
-                  +(omg(i+1,j)+omg(i-1,j)+omg(i,j+1)+omg(i,j-1) &
-                  -4.0*omg(i,j))/Re
+          rhso = ((psi(i+1,j)-psi(i-1,j))*(omg(i,j+1)-omg(i,j-1)) &
+                -(psi(i,j+1)-psi(i,j-1))*(omg(i+1,j)-omg(i-1,j)))/4.0 &
+                +(omg(i+1,j)+omg(i-1,j)+omg(i,j+1)+omg(i,j-1) &
+                -4.0*omg(i,j))/Re
 
-            omg(i,j) = omg(i,j)+dt*rhso/(h**2)
-            !write(*,*) 'omg',omg
-          end do
+          omg(i,j) = omg(i,j)+dt*rhso/(h**2)
+
         end do
-
-    !    i=0.0
-    !
-    !    do j = 2, Nvert-1
-    !      do i = 2, Nvert-1
-!
-!            err=abs(omg(i,j)-tmp(i,j))
-
-!            if(err.ge.Err_max) then
-!              Err_max = err
-!            end if
-
-!        end do
-!      end do
-
-!    end do
+      end do
 
 
-    !write(*,*)'==================================================Iteration=',l
 
     !close MAIN LOOP
 
-    if(FLAG == 1) then
-      write(*,*)'psi'
-      write(*,*)psi
-      write(*,*)'omg'
-      write(*,*)omg
-      write(*,*) "########## Calculation aboted. Check PARAM.dat ##########"
+      if(FLAG == 1) then
 
-    elseif (mod(l,Stop_itr) == 0) then
-      write(*,*)'psi'
-      write(*,*)psi
-      write(*,*)'omg'
-      write(*,*)omg
-      write(*,*) "press 1=stop, 2~ =continue"
-      read(*,*) q
-      if(q == 1) then
-        FLAG=2
+        write(*,*) 'psi'
+        do j=1, Nvert
+        	write(*,*) (psi(i,j),i=1, Nvert)
+        end do
+
+        write(*,*) 'omg'
+        do j=1, Nvert
+        	write(*,*) (omg(i,j),i=1, Nvert)
+        end do
+
+
+
+      elseif (mod(l,Stop_itr) == 0) then
+
+        write(*,*) 'psi'
+        do j=1, Nvert
+        	write(*,*) (psi(i,j),i=1, Nvert)
+        end do
+
+        write(*,*) 'omg'
+        do j=1, Nvert
+        	write(*,*) (omg(i,j),i=1, Nvert)
+        end do
+
+        write(*,*) "press 1=stop, 2 =continue"
+        read(*,*) q
+        if(q == 1) then
+          FLAG = 2
+
+          do j=1, Nvert
+            write(2,*) (psi(i,j),i=1, Nvert)
+            write(3,*) (omg(i,j),i=1, Nvert)
+          end do
+
+        end if
       end if
-    end if
-  end do
+
+    end do
 
 
-  stop
-  end
+
+    stop
+    end program po2d
