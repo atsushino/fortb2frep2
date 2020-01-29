@@ -3,12 +3,12 @@
 
 
     implicit none
-    character(len=32)       Basename
-    integer, allocatable :: psi(:,:), omg(:,:) ,tmp(:,:)
+    character(len=32)          Basename
+    real(8), allocatable ::    psi(:,:), omg(:,:) ,tmp(:,:)
     integer(8)                 i, j, k, l, q, Nvert, FLAG
     integer(8)                 Ncell, Stop_itr
     real(8)                    Re, dt, eps, const
-    real(8)                    h, rhsp, rhso, bb, err
+    real(8)                    h, rhsp, rhso, err, Err_max
 
     open(1, file='PARAM.dat')
     read(1,*)Basename, const, Re, dt, eps, Ncell, Stop_itr
@@ -18,7 +18,7 @@
     Nvert = Ncell + 1
 
 
-    allocate(psi(Nvert,Nvert))
+    allocate(psi(Nvert,Nvert))  !cellvertex
     allocate(omg(Nvert,Nvert))
     allocate(tmp(Nvert,Nvert))
 
@@ -28,9 +28,10 @@
 
     write(*,*)'Mesh size=',Ncell,'*',Ncell,'=',Ncell**2
 
-    h = 1.0/float(Ncell)  !cellvertex
+    h = 1.0/float(Ncell)
 
     write(*,*)'============== Grid generation: Done ============='
+
 
 
 
@@ -41,14 +42,19 @@
     l=0
     do while (FLAG == 0)
 
+      !write(*,*)psi
+      !write(*,*)omg
 
       !========boundary condition for cuvic cavity
+
+      i=0.0
+      j=0.0
 
       !left/right
       do j = 1, Nvert
 
-        omg(1,j)      = -2.0*psi(2    ,j) /(h**2.0)
-        omg(Nvert,j)  = -2.0*psi(Nvert,j) /(h**2.0)
+        omg(1,j)      = -2.0*psi(2      ,j) /(h**2.0)
+        omg(Nvert,j)  = -2.0*psi(Nvert-1,j) /(h**2.0)
 
       end do
 
@@ -64,73 +70,101 @@
 
 
       !calc psi
+      Err_max=eps*1.1
+      do while (Err_max.gt.eps)
+        Err_max=0.0
+        write(*,*)'Err_max',Err_max
 
-      do while (err.gt.eps)
+        i=0.0
+        j=0.0
+
         do j = 2, Nvert-1
           do i = 2, Nvert-1
 
             tmp(i,j) = psi(i,j)
 
             rhsp = (psi(i+1,j)+psi(i-1,j)+psi(i,j+1)+psi(i,j-1))/4.0 &
-                   +omg(i,j)*h**2.0/4.0-psi(i,j)
+                   +omg(i,j)*(h**2.0)/4.0-psi(i,j)
 
             psi(i,j) = psi(i,j)+const*rhsp
-            !write(*,*)psi!!!!!!!!!!
+            write(*,*)'psi',psi
           end do
         end do
 
-        err=0.0
+        i=0.0
+        j=0.0
+
         do j = 2, Nvert-1
           do i = 2, Nvert-1
 
-             bb=abs(psi(i,j)-tmp(i,j))
+            err=abs(psi(i,j)-tmp(i,j))
 
-             if(bb.ge.err) then
-              err = bb
+            if(err.ge.Err_max) then
+              Err_max = err
             end if
 
           end do
         end do
-      end do
 
 
 
-      !calc omg
-      do j = 2, Nvert-1
-        do i = 2, Nvert-1
+        i=0.0
+        j=0.0
 
-          tmp(i,j) = omg(i,j)
+        !calc omg
+        do j = 2, Nvert-1
+          do i = 2, Nvert-1
 
-          rhso = ((psi(i+1,j)-psi(i-1,j))*(omg(i,j+1)-omg(i,j-1)) &
-                 -(psi(i,j+1)-psi(i,j-1))*(omg(i+1,j)-omg(i-1,j)))/4.0 &
-                 +(omg(i+1,j)+omg(i-1,j)+omg(i,j+1)+omg(i,j-1) &
-                 -4.0*omg(i,j))/Re
+            tmp(i,j) = omg(i,j)
 
-          omg(i,j) = omg(i,j)+dt*rhso/(h**2)
-          !write(*,*) omg!!!!!!!
+            rhso = ((psi(i+1,j)-psi(i-1,j))*(omg(i,j+1)-omg(i,j-1)) &
+                  -(psi(i,j+1)-psi(i,j-1))*(omg(i+1,j)-omg(i-1,j)))/4.0 &
+                  +(omg(i+1,j)+omg(i-1,j)+omg(i,j+1)+omg(i,j-1) &
+                  -4.0*omg(i,j))/Re
+
+            omg(i,j) = omg(i,j)+dt*rhso/(h**2)
+            write(*,*) 'omg',omg
+          end do
+        end do
+
+        i=0.0
+        j=0.0
+
+        do j = 2, Nvert-1
+          do i = 2, Nvert-1
+
+            err=abs(omg(i,j)-tmp(i,j))
+
+            if(err.ge.Err_max) then
+              Err_max = err
+            end if
+
         end do
       end do
 
-      l=l+1
-      write(*,*)'iteration=',l
+    end do
 
-      !close MAIN LOOP
+    l=l+1
+    write(*,*)'iteration=',l
+
+    !close MAIN LOOP
 
 
-      if(mod(l.Stop_itr) == Stop_itr) then
-        write(*,*) "press 1=stop, else=continue"
-        read(*,*) q
-        if(q == 1) then
-          FLAG=1
-        end if
+    if(mod(l,Stop_itr) == 0) then
+      write(*,*) "press 1=stop, 2~ =continue"
+      read(*,*) q
+      if(q == 1) then
+        FLAG=1
       end if
+    end if
 
 
 
     end do
 
+      write(*,*)'psi'
       write(*,*)psi
-      write(*,*)
+      write(*,*)'omg'
       write(*,*)omg
     stop
     end
