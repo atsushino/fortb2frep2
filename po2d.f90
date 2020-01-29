@@ -5,7 +5,7 @@
     implicit none
     character(len=32)          Basename
     real(8), allocatable ::    psi(:,:), omg(:,:) ,tmp(:,:)
-    integer(8)                 i, j, k, l, q, Nvert, FLAG
+    integer(8)                 i, j, k, l, m, q, Nvert, FLAG
     integer(8)                 Ncell, Stop_itr
     real(8)                    Re, dt, eps, const
     real(8)                    h, rhsp, rhso, err, Err_max
@@ -40,6 +40,7 @@
     FLAG=0
     q=0
     l=0
+    m=0
     do while (FLAG == 0)
 
       !write(*,*)psi
@@ -72,8 +73,10 @@
       !calc psi
       Err_max=eps*1.1
       do while (Err_max.gt.eps)
+        m = m + 1
+        write(*,*)'Itr=',l,'GZitr=',m,'Err_max',Err_max
         Err_max=0.0
-        write(*,*)'Err_max',Err_max
+
 
         i=0.0
         j=0.0
@@ -87,7 +90,7 @@
                    +omg(i,j)*(h**2.0)/4.0-psi(i,j)
 
             psi(i,j) = psi(i,j)+const*rhsp
-            write(*,*)'psi',psi
+            !write(*,*)'psi',psi
           end do
         end do
 
@@ -123,7 +126,7 @@
                   -4.0*omg(i,j))/Re
 
             omg(i,j) = omg(i,j)+dt*rhso/(h**2)
-            write(*,*) 'omg',omg
+            !write(*,*) 'omg',omg
           end do
         end do
 
@@ -145,26 +148,24 @@
     end do
 
     l=l+1
-    write(*,*)'iteration=',l
+    write(*,*)'==================================================Iteration=',l
 
     !close MAIN LOOP
 
 
     if(mod(l,Stop_itr) == 0) then
+      write(*,*)'psi'
+      write(*,*)psi
+      write(*,*)'omg'
+      write(*,*)omg
       write(*,*) "press 1=stop, 2~ =continue"
       read(*,*) q
       if(q == 1) then
         FLAG=1
       end if
     end if
+  end do
 
 
-
-    end do
-
-      write(*,*)'psi'
-      write(*,*)psi
-      write(*,*)'omg'
-      write(*,*)omg
-    stop
-    end
+  stop
+  end
