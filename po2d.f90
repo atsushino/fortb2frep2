@@ -7,11 +7,11 @@
     real(8), allocatable ::    psi(:,:), omg(:,:) ,tmp(:,:)
     integer(8)                 i, j, k, l, m, q, Nvert, FLAG
     integer(8)                 Ncell, Stop_itr
-    real(8)                    Re, dt, eps, const
+    real(8)                    Re, dt, eps, const, Calc_max
     real(8)                    h, rhsp, rhso, err, Err_max
 
     open(1, file='PARAM.dat')
-    read(1,*)Basename, const, Re, dt, eps, Ncell, Stop_itr
+    read(1,*)Basename, const, Re, dt, eps, Ncell, Stop_itr, Calc_max
 
     write(*,*)'============== Grid generation ==================='
 
@@ -42,6 +42,7 @@
     l=0
     m=0
     do while (FLAG == 0)
+      l=l+1
 
       !write(*,*)psi
       !write(*,*)omg
@@ -71,9 +72,11 @@
 
 
       !calc psi
+      m = 0
       Err_max=eps*1.1
-      do while (Err_max.gt.eps)
-        m = m + 1
+      do while (Err_max.gt.eps .and. FLAG == 0)
+
+                m = m + 1
         write(*,*)'Itr=',l,'GZitr=',m,'Err_max',Err_max
         Err_max=0.0
 
@@ -109,6 +112,17 @@
           end do
         end do
 
+        do j = 1, Nvert
+          do i = 1, Nvert
+
+            if(abs(psi(i,j)).ge.Calc_max .or. abs(omg(i,j)).ge.Calc_max) then
+              FLAG=1
+            end if
+
+          end do
+        end do
+
+      end do
 
 
         i=0.0
@@ -130,30 +144,35 @@
           end do
         end do
 
-        i=0.0
-        j=0.0
+    !    i=0.0
+    !
+    !    do j = 2, Nvert-1
+    !      do i = 2, Nvert-1
+!
+!            err=abs(omg(i,j)-tmp(i,j))
 
-        do j = 2, Nvert-1
-          do i = 2, Nvert-1
+!            if(err.ge.Err_max) then
+!              Err_max = err
+!            end if
 
-            err=abs(omg(i,j)-tmp(i,j))
+!        end do
+!      end do
 
-            if(err.ge.Err_max) then
-              Err_max = err
-            end if
+!    end do
 
-        end do
-      end do
 
-    end do
-
-    l=l+1
-    write(*,*)'==================================================Iteration=',l
+    !write(*,*)'==================================================Iteration=',l
 
     !close MAIN LOOP
 
+    if(FLAG == 1) then
+      write(*,*)'psi'
+      write(*,*)psi
+      write(*,*)'omg'
+      write(*,*)omg
+      write(*,*) "########## Calculation aboted. Check PARAM.dat ##########"
 
-    if(mod(l,Stop_itr) == 0) then
+    elseif (mod(l,Stop_itr) == 0) then
       write(*,*)'psi'
       write(*,*)psi
       write(*,*)'omg'
@@ -161,7 +180,7 @@
       write(*,*) "press 1=stop, 2~ =continue"
       read(*,*) q
       if(q == 1) then
-        FLAG=1
+        FLAG=2
       end if
     end if
   end do
