@@ -188,6 +188,8 @@
             write(3,*) (omg(i,j),i=1, Nvert)
           end do
 
+          write(*,*)'======= Result Saved.'
+
         end if
       end if
 
