@@ -11,8 +11,9 @@
     real(8)                    h, rhsp, rhso, err, Err_max
 
     open(1, file='PARAM.dat', action="read")
-    open(2, file='psi.txt', action="write")
-    open(3, file='omg.txt', action="write")
+    open(2, file='psi.txt', status="replace", action="write")
+    open(3, file='omg.txt', status="replace", action="write")
+
 
     read(1,*)Basename, const, Re, dt, eps, Ncell, Stop_itr, Calc_max
 
@@ -187,6 +188,8 @@
             write(2,*) (psi(i,j),i=1, Nvert)
             write(3,*) (omg(i,j),i=1, Nvert)
           end do
+
+          write(*,*)'======= Result Saved.'
 
         end if
       end if
