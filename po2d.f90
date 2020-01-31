@@ -7,7 +7,7 @@
     real(8), allocatable ::    psi(:,:), omg(:,:) ,tmp(:,:)
     integer(8)                 i, j, k, l, m, q, Nvert, FLAG
     integer(8)                 Ncell, Stop_itr
-    real(8)                    vrel, Re, dt, eps, const, Calc_max
+    real(8)                    urel, Re, dt, eps, const, Calc_max
     real(8)                    h, rhsp, rhso, err, Err_max
 
     open(1, file='PARAM.dat',                     action="read")
@@ -17,7 +17,7 @@
 
 
 
-    read(1,*)Basename, vrel, const, Re, dt, eps, Ncell, Stop_itr, Calc_max
+    read(1,*) Basename, Ncell, urel, Re, const, dt, eps ,Stop_itr, Calc_max
 
     write(*,*)'======= Grid generation ============='
     write(4,*)'======= Grid generation ============='
@@ -74,7 +74,7 @@
       do i = 1, Nvert
 
         omg(i,1)      = -2.0*psi(i ,              2)/(h**2.0)
-        omg(i,Nvert)  = -2.0*(psi(i,Nvert-1)+vrel*h)/(h**2.0)
+        omg(i,Nvert)  = -2.0*(psi(i,Nvert-1)+urel*h)/(h**2.0)
 
       end do
       !======= boundary condition for cuvic cavity: END
@@ -121,6 +121,8 @@
               FLAG=1   !ABRT calclatio to aboid overflow
               write(*,*)'Error: Check PARAM.dat'
               write(4,*)'Error: Check PARAM.dat'
+
+              stop
             end if
 
           end do
@@ -174,21 +176,21 @@
 
     !close MAIN LOOP
 
-      if(FLAG == 1) then
+    !  if(FLAG == 1) then
 
-        write(*,*) 'psi'
-        do j=1, Nvert
-        	write(*,*) (psi(i,j),i=1, Nvert)
-        end do
+    !    write(*,*) 'psi'
+    !    do j=1, Nvert
+    !    	write(*,*) (psi(i,j),i=1, Nvert)
+    !    end do
 
-        write(*,*) 'omg'
-        do j=1, Nvert
-        	write(*,*) (omg(i,j),i=1, Nvert)
-        end do
+    !    write(*,*) 'omg'
+    !    do j=1, Nvert
+    !    	write(*,*) (omg(i,j),i=1, Nvert)
+    !    end do
 
 
 
-      elseif (mod(l,Stop_itr) == 0) then
+      if (mod(l,Stop_itr) == 0) then
 
         write(*,*) 'psi'
         do j=1, Nvert
