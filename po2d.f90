@@ -7,17 +7,20 @@
     real(8), allocatable ::    psi(:,:), omg(:,:) ,tmp(:,:)
     integer(8)                 i, j, k, l, m, q, Nvert, FLAG
     integer(8)                 Ncell, Stop_itr
-    real(8)                    Re, dt, eps, const, Calc_max
+    real(8)                    vrel, Re, dt, eps, const, Calc_max
     real(8)                    h, rhsp, rhso, err, Err_max
 
-    open(1, file='PARAM.dat', action="read")
-    open(2, file='psi.txt', status="replace", action="write")
-    open(3, file='omg.txt', status="replace", action="write")
+    open(1, file='PARAM.dat',                     action="read")
+    open(2, file='psi.txt',     status="replace", action="write")
+    open(3, file='omg.txt',     status="replace", action="write")
+    open(4, file='po2dlog.txt', status="replace", action="write")
 
 
-    read(1,*)Basename, const, Re, dt, eps, Ncell, Stop_itr, Calc_max
+
+    read(1,*)Basename, vrel, const, Re, dt, eps, Ncell, Stop_itr, Calc_max
 
     write(*,*)'======= Grid generation ============='
+    write(4,*)'======= Grid generation ============='
 
     Nvert = Ncell + 1           !cellvertex
 
@@ -30,17 +33,21 @@
     tmp(:,:)=0.0
 
     write(*,*)'Grid size=',Ncell,'*',Ncell,'=',Ncell**2
+    write(4,*)'Grid size=',Ncell,'*',Ncell,'=',Ncell**2
 
 
     h = 1.0/float(Ncell)
 
     write(*,*)'======= Grid generation: Done ======='
     write(*,*)
+    write(4,*)'======= Grid generation: Done ======='
+    write(4,*)
 
 
 
     !MAIN LOOP
     write(*,*)'======= Psi-Omega Method ============'
+    write(4,*)'======= Psi-Omega Method ============'
 
     FLAG=0
     q=0
@@ -66,8 +73,8 @@
       !bottom/top
       do i = 1, Nvert
 
-        omg(i,1)      = -2.0*psi(i ,         2)/(h**2.0)
-        omg(i,Nvert)  = -2.0*(psi(i,Nvert-1)+h)/(h**2.0)
+        omg(i,1)      = -2.0*psi(i ,              2)/(h**2.0)
+        omg(i,Nvert)  = -2.0*(psi(i,Nvert-1)+vrel*h)/(h**2.0)
 
       end do
       !======= boundary condition for cuvic cavity: END
@@ -80,10 +87,12 @@
       m = 0             !reset counter GS_itr
       Err_max=eps*1.1   !enter DO loop below
 
-      do while (Err_max.gt.eps .and. FLAG == 0)
+      do while (FLAG==0 .and. Err_max.gt.eps)
 
         m = m + 1
         Err_max=0.0
+
+
 
         i=0.0
         j=0.0
@@ -100,6 +109,25 @@
           end do
         end do
 
+
+
+        i=0.0
+        j=0.0
+
+        do j = 1, Nvert
+          do i = 1, Nvert
+
+            if(abs(psi(i,j)).ge.Calc_max .or. abs(omg(i,j)).ge.Calc_max) then
+              FLAG=1   !ABRT calclatio to aboid overflow
+              write(*,*)'Error: Check PARAM.dat'
+              write(4,*)'Error: Check PARAM.dat'
+            end if
+
+          end do
+        end do
+
+
+
         i=0.0
         j=0.0
 
@@ -115,17 +143,10 @@
           end do
         end do
 
-        do j = 1, Nvert
-          do i = 1, Nvert
 
-            if(abs(psi(i,j)).ge.Calc_max .or. abs(omg(i,j)).ge.Calc_max) then
-              FLAG=1    !ABRT calclatio to aboid overflow
-            end if
 
-          end do
-        end do
-
-        write(*,*)'Itr=',l,'GSitr=',m,'Err_max',Err_max
+        write(*,*)'Itr',l,'GSitr',m,'Err_max',Err_max
+        write(4,*)'Itr',l,'GSitr',m,'Err_max',Err_max
 
       end do
 
@@ -189,7 +210,8 @@
             write(3,*) (omg(i,j),i=1, Nvert)
           end do
 
-          write(*,*)'======= Result Saved.'
+          write(*,*)'======= Result Saved (psi.txt , omg.txt).'
+          write(4,*)'======= Result Saved (psi.txt , omg.txt).'
 
         end if
       end if
