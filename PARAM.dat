@@ -1,21 +1,21 @@
 pocav2d
+20
 1.0
+600
 1.0
-40.0
 0.01
 0.00001
-30
-200
+20000
 131072
 
 
-###########
+#######################
 Basename  (len=32)
-const
-Re
-dt
-eps
-Nmesh
-Stop_itr
-Calc_max
-c
+Ncell     (integer(8))
+urel      (real(8))
+Re        (real(8))
+const     (real(8))
+dt        (real(8))
+eps       (real(8))
+Stop_itr  (integer(8))
+Calc_max  (integer(8))

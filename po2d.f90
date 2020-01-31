@@ -19,6 +19,35 @@
 
     read(1,*) Basename, Ncell, urel, Re, const, dt, eps ,Stop_itr, Calc_max
 
+    write(*,*)'============================================'
+    write(*,*)' 2D PSI-OMEGA METHOD CFD ANALYSIS'
+    write(*,*)' ver 1.1.0'
+    write(*,*)' by ATSUSHI SHINOZUKA'
+    write(*,*)' CASE: UNSTEDY FLOW IN CUBIC CAVITY'
+    write(*,*)' METHOD: CENTRAL DIFFERENCE'
+    write(*,*)'         GAUSS=SEIDEL METHOD'
+    write(*,*)' Set parameters in PARAM.dat '
+    write(*,*)' Check for update on GitHub:'
+    write(*,*)'https://github.com/atsushino/fortb2frep2'
+    write(*,*)'============================================'
+    write(*,*)
+
+    write(4,*)'============================================'
+    write(4,*)' 2D PSI-OMEGA METHOD CFD ANALYSIS'
+    write(4,*)' ver 1.1.0'
+    write(4,*)' by ATSUSHI SHINOZUKA'
+    write(4,*)' CASE: UNSTEDY FLOW IN CUBIC CAVITY'
+    write(4,*)' METHOD: CENTRAL DIFFERENCE'
+    write(4,*)'         GAUSS=SEIDEL METHOD'
+    write(4,*)' Check for update on GitHub:'
+    write(4,*)'https://github.com/atsushino/fortb2frep2'
+    write(4,*)'============================================'
+    write(4,*)
+
+
+
+    write(4,*)'======= Grid generation ============='
+
     write(*,*)'======= Grid generation ============='
     write(4,*)'======= Grid generation ============='
 
